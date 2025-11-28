@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<!-- saved from url=(0052)file:///Users/hangyeolkim/Downloads/dice_game_1.html -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <title>주사위 6개 홀짝 게임</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f6f7fb;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .game-container {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      padding: 24px 28px;
+      max-width: 480px;
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    .status {
+      margin: 8px 0;
+      font-size: 14px;
+    }
+
+    .status strong {
+      color: #444;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      background: #e0e4ff;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button:hover {
+      background: #c8cffc;
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      background: #ddd;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .primary {
+      background: #4b5cff;
+      color: white;
+    }
+
+    .primary:hover {
+      background: #343fe0;
+    }
+
+    .choice-selected {
+      background: #4b5cff;
+      color: white;
+    }
+
+    .dice-list {
+      margin: 10px 0;
+      font-size: 14px;
+      word-break: break-all;
+    }
+
+    .score-board {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #f2f4ff;
+      font-size: 14px;
+    }
+
+    .log {
+      margin-top: 10px;
+      padding: 8px;
+      font-size: 13px;
+      background: #fafafa;
+      border-radius: 8px;
+      max-height: 160px;
+      overflow-y: auto;
+      border: 1px solid #eee;
+    }
+
+    .log-entry {
+      margin-bottom: 4px;
+    }
+
+    .winner {
+      font-weight: bold;
+      color: #e53935;
+      margin-top: 8px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>주사위 6개 홀짝 게임</h1>
+
+    <!-- 현재 상태 안내 영역 -->
+    <div class="status">
+      <strong>나의 선택한 홀/짝:</strong>
+      <span id="playerChoiceText">없음</span>
+    </div>
+    <div class="status">
+      <strong>컴퓨터의 홀/짝:</strong>
+      <span id="computerChoiceText">없음</span>
+    </div>
+    <div class="status">
+      <strong>이번 라운드 가위바위보 결과:</strong>
+      <span id="rpsResultText">아직 없음</span>
+    </div>
+    <div class="status">
+      <strong>이번 라운드 주사위 굴린 사람:</strong>
+      <span id="rollerText">없음</span>
+    </div>
+
+    <!-- 홀/짝 선택 버튼 -->
+    <div class="buttons">
+      <button id="oddBtn">홀수 선택</button>
+      <button id="evenBtn">짝수 선택</button>
+    </div>
+
+    <!-- 중앙의 가위바위보 버튼 -->
+    <div class="buttons">
+      <button id="rpsBtn" class="primary">✊✌✋ 가위바위보!</button>
+      <button id="resetBtn" style="display:none;">게임 다시 시작</button>
+    </div>
+
+    <!-- 주사위 결과 표시 -->
+    <div class="dice-list" id="diceResultText">
+      주사위를 아직 굴리지 않았습니다.
+    </div>
+
+    <!-- 점수판 -->
+    <div class="score-board">
+      <div><strong>내가 모은 주사위 개수:</strong> <span id="playerDiceCount">0</span></div>
+      <div><strong>컴퓨터가 모은 주사위 개수:</strong> <span id="computerDiceCount">0</span></div>
+      <div class="winner" id="winnerText"></div>
+    </div>
+
+    <!-- 간단한 로그 -->
+    <div class="log" id="logBox">
+      <!-- 라운드 기록이 여기에 쌓임 -->
+    </div>
+  </div>
+
+  <script>
+    // ==========================
+    // 게임 상태를 저장하는 변수들
+    // ==========================
+
+    // 플레이어가 선택한 홀/짝: 'odd' 또는 'even' 또는 null
+    let playerParity = null;
+
+    // 플레이어와 컴퓨터가 모은 주사위 개수 (누적)
+    let playerDiceTotal = 0;
+    let computerDiceTotal = 0;
+
+    // 게임이 끝났는지 여부
+    let gameOver = false;
+
+    // HTML 요소 가져오기
+    const playerChoiceText = document.getElementById('playerChoiceText');
+    const computerChoiceText = document.getElementById('computerChoiceText');
+    const rpsResultText = document.getElementById('rpsResultText');
+    const rollerText = document.getElementById('rollerText');
+    const diceResultText = document.getElementById('diceResultText');
+    const playerDiceCountSpan = document.getElementById('playerDiceCount');
+    const computerDiceCountSpan = document.getElementById('computerDiceCount');
+    const winnerText = document.getElementById('winnerText');
+    const logBox = document.getElementById('logBox');
+
+    const oddBtn = document.getElementById('oddBtn');
+    const evenBtn = document.getElementById('evenBtn');
+    const rpsBtn = document.getElementById('rpsBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // ==========================
+    // 초기화 / 상태 설정 함수들
+    // ==========================
+
+    // 홀수 선택 버튼 클릭했을 때
+    oddBtn.addEventListener('click', () => {
+      if (gameOver) return;
+      playerParity = 'odd'; // 홀수 선택
+      updateParityTexts();
+      highlightParityButton();
+    });
+
+    // 짝수 선택 버튼 클릭했을 때
+    evenBtn.addEventListener('click', () => {
+      if (gameOver) return;
+      playerParity = 'even'; // 짝수 선택
+      updateParityTexts();
+      highlightParityButton();
+    });
+
+    // 홀/짝 텍스트 갱신
+    function updateParityTexts() {
+      if (playerParity === 'odd') {
+        playerChoiceText.textContent = '홀수';
+        computerChoiceText.textContent = '짝수 (자동)';
+      } else if (playerParity === 'even') {
+        playerChoiceText.textContent = '짝수';
+        computerChoiceText.textContent = '홀수 (자동)';
+      } else {
+        playerChoiceText.textContent = '없음';
+        computerChoiceText.textContent = '없음';
+      }
+    }
+
+    // 선택된 버튼에 스타일 입히기
+    function highlightParityButton() {
+      oddBtn.classList.remove('choice-selected');
+      evenBtn.classList.remove('choice-selected');
+
+      if (playerParity === 'odd') {
+        oddBtn.classList.add('choice-selected');
+      } else if (playerParity === 'even') {
+        evenBtn.classList.add('choice-selected');
+      }
+    }
+
+    // ==========================
+    // 가위바위보 처리
+    // ==========================
+
+    // 가위바위보 버튼 클릭
+    rpsBtn.addEventListener('click', () => {
+      if (gameOver) return;
+
+      // 홀/짝을 아직 선택하지 않았다면 경고
+      if (!playerParity) {
+        alert('먼저 홀수/짝수 중 하나를 선택해 주세요!');
+        return;
+      }
+
+      // 가위바위보 실행
+      playRPSAndRollDice();
+    });
+
+    // 가위바위보를 하고, 진 사람이 주사위를 굴리게 하는 함수
+    function playRPSAndRollDice() {
+      const hands = ['가위', '바위', '보'];
+
+      // 플레이어와 컴퓨터의 랜덤 선택
+      const playerHand = hands[Math.floor(Math.random() * hands.length)];
+      const computerHand = hands[Math.floor(Math.random() * hands.length)];
+
+      let resultText = `나: ${playerHand}, 컴퓨터: ${computerHand} → `;
+
+      // 승패 판정
+      let loser = null; // 'player' 또는 'computer'
+      if (playerHand === computerHand) {
+        resultText += '무승부! 다시 눌러 주세요.';
+        rpsResultText.textContent = resultText;
+        rollerText.textContent = '없음';
+        addLog(resultText);
+        return; // 무승부이면 주사위를 굴리지 않음
+      }
+
+      // 가위바위보 승패 규칙
+      const playerWins =
+        (playerHand === '가위' && computerHand === '보') ||
+        (playerHand === '바위' && computerHand === '가위') ||
+        (playerHand === '보' && computerHand === '바위');
+
+      if (playerWins) {
+        resultText += '내가 이겼다!';
+        loser = 'computer'; // 진 사람 = 컴퓨터
+      } else {
+        resultText += '컴퓨터가 이겼다!';
+        loser = 'player'; // 진 사람 = 플레이어
+      }
+
+      rpsResultText.textContent = resultText;
+      rollerText.textContent = loser === 'player' ? '나' : '컴퓨터';
+      addLog(resultText + ` (주사위 굴린 사람: ${loser === 'player' ? '나' : '컴퓨터'})`);
+
+      // 진 사람이 주사위를 굴림 (점수 계산은 홀/짝 선택에 따라 진행)
+      rollDiceAndCalculate(loser);
+    }
+
+    // ==========================
+    // 주사위 굴리기 & 점수 계산
+    // ==========================
+
+    // 6개의 주사위를 굴리고, 홀수/짝수 개수를 세어 점수 반영
+    function rollDiceAndCalculate(loser) {
+      // 6개의 주사위 결과를 저장할 배열
+      const dice = [];
+      for (let i = 0; i < 6; i++) {
+        const value = Math.floor(Math.random() * 6) + 1; // 1~6
+        dice.push(value);
+      }
+
+      // 화면에 보여줄 문자열 생성
+      diceResultText.textContent = `굴린 주사위: ${dice.join(', ')}`;
+
+      // 홀수/짝수 개수 세기
+      let oddCount = 0;
+      let evenCount = 0;
+      dice.forEach((v) => {
+        if (v % 2 === 0) {
+          evenCount++;
+        } else {
+          oddCount++;
+        }
+      });
+
+      // 플레이어/컴퓨터가 어떤 주사위를 가져가는지 계산
+      let playerGain = 0;
+      let computerGain = 0;
+
+      if (playerParity === 'odd') {
+        // 플레이어가 홀수 선택 → 홀수 개수만큼 가져감
+        playerGain = oddCount;
+        computerGain = evenCount;
+      } else if (playerParity === 'even') {
+        // 플레이어가 짝수 선택 → 짝수 개수만큼 가져감
+        playerGain = evenCount;
+        computerGain = oddCount;
+      }
+
+      // 누적 점수에 반영
+      playerDiceTotal += playerGain;
+      computerDiceTotal += computerGain;
+
+      // 화면에 점수 갱신
+      playerDiceCountSpan.textContent = playerDiceTotal;
+      computerDiceCountSpan.textContent = computerDiceTotal;
+
+      // 로그에 기록
+      addLog(
+        `이번 라운드: 홀수=${oddCount}, 짝수=${evenCount} → 내가 가져간 주사위=${playerGain}개, 컴퓨터가 가져간 주사위=${computerGain}개`
+      );
+
+      // 승리 여부 확인 (먼저 6개 이상 모으면 승리)
+      checkWinner();
+    }
+
+    // ==========================
+    // 승리 판정 및 게임 종료 처리
+    // ==========================
+
+    function checkWinner() {
+      if (playerDiceTotal >= 6 && computerDiceTotal >= 6) {
+        winnerText.textContent = '동시 6개 이상! 비겼습니다.';
+        endGame();
+      } else if (playerDiceTotal >= 6) {
+        winnerText.textContent = '축하합니다! 내가 먼저 6개를 모았습니다 🎉';
+        endGame();
+      } else if (computerDiceTotal >= 6) {
+        winnerText.textContent = '아쉽네요! 컴퓨터가 먼저 6개를 모았습니다 😢';
+        endGame();
+      }
+    }
+
+    function endGame() {
+      gameOver = true;
+      rpsBtn.disabled = true;
+      oddBtn.disabled = true;
+      evenBtn.disabled = true;
+      resetBtn.style.display = 'inline-block';
+      addLog('게임 종료!');
+    }
+
+    // ==========================
+    // 로그 기록 관련 함수
+    // ==========================
+
+    function addLog(message) {
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.textContent = message;
+      logBox.prepend(div); // 최근 로그가 위로 오게
+    }
+
+    // ==========================
+    // 게임 리셋
+    // ==========================
+
+    resetBtn.addEventListener('click', resetGame);
+
+    function resetGame() {
+      // 상태 초기화
+      playerParity = null;
+      playerDiceTotal = 0;
+      computerDiceTotal = 0;
+      gameOver = false;
+
+      // 화면 텍스트 초기화
+      playerChoiceText.textContent = '없음';
+      computerChoiceText.textContent = '없음';
+      rpsResultText.textContent = '아직 없음';
+      rollerText.textContent = '없음';
+      diceResultText.textContent = '주사위를 아직 굴리지 않았습니다.';
+      playerDiceCountSpan.textContent = '0';
+      computerDiceCountSpan.textContent = '0';
+      winnerText.textContent = '';
+      logBox.innerHTML = '';
+
+      // 버튼 상태 초기화
+      rpsBtn.disabled = false;
+      oddBtn.disabled = false;
+      evenBtn.disabled = false;
+      resetBtn.style.display = 'none';
+      oddBtn.classList.remove('choice-selected');
+      evenBtn.classList.remove('choice-selected');
+    }
+  </script>
+
+
+</body></html>
