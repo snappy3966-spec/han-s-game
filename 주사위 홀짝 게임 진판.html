@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<!-- saved from url=(0055)file:///Users/hangyeolkim/Downloads/dice_game_v3_4.html -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주사위 홀짝 게임</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    /* 게임 설명 모달 */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-content h2 {
+      font-size: 28px;
+      margin-bottom: 20px;
+      color: #667eea;
+    }
+
+    .modal-content p {
+      font-size: 16px;
+      line-height: 1.8;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .modal-content .confirm-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 15px 40px;
+      font-size: 18px;
+      border-radius: 50px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .modal-content .confirm-btn:hover {
+      background: #5568d3;
+      transform: scale(1.05);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* 게임 컨테이너 */
+    .game-container {
+      background: white;
+      border-radius: 20px;
+      padding: 25px;
+      max-width: 700px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      text-align: center;
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 28px;
+    }
+
+    /* 홀짝 선택 영역 */
+    .parity-selection {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .parity-selection h3 {
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 20px;
+    }
+
+    .parity-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+    }
+
+    .parity-btn {
+      padding: 20px 50px;
+      font-size: 22px;
+      border: 3px solid #667eea;
+      background: white;
+      color: #667eea;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: bold;
+    }
+
+    .parity-btn:hover {
+      background: #667eea;
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .parity-btn.selected {
+      background: #667eea;
+      color: white;
+    }
+
+    /* 게임 보드 */
+    .game-board {
+      margin: 20px 0;
+    }
+
+    /* 영역 구분 */
+    .player-section {
+      padding: 15px;
+      border-radius: 15px;
+      margin: 15px 0;
+    }
+
+    .computer-section {
+      background: #ffe4e4;
+      border: 3px solid #e74c3c;
+      position: relative;
+    }
+
+    .computer-section.odd {
+      background: #e4f0ff;
+      border: 3px solid #3498db;
+    }
+
+    .computer-section.even {
+      background: #ffe4e4;
+      border: 3px solid #e74c3c;
+    }
+
+    .user-section {
+      background: #e4f0ff;
+      border: 3px solid #3498db;
+      position: relative;
+    }
+
+    .user-section.odd {
+      background: #e4f0ff;
+      border: 3px solid #3498db;
+    }
+
+    .user-section.even {
+      background: #ffe4e4;
+      border: 3px solid #e74c3c;
+    }
+
+    .parity-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      border: 2px solid;
+    }
+
+    .parity-badge.odd {
+      color: #3498db;
+      border-color: #3498db;
+    }
+
+    .parity-badge.even {
+      color: #e74c3c;
+      border-color: #e74c3c;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .computer-section .section-title {
+      color: #e74c3c;
+    }
+
+    .user-section .section-title {
+      color: #3498db;
+    }
+
+    /* 손 표시 */
+    .hand-display {
+      text-align: center;
+      font-size: 80px;
+      margin: 10px 0;
+      min-height: 100px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .hand-icon {
+      animation: shake 0.5s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-15deg); }
+      75% { transform: rotate(15deg); }
+    }
+
+    /* 주사위 영역 */
+    .dice-area {
+      text-align: center;
+      min-height: 120px;
+      margin: 20px 0;
+    }
+
+    .dice-container {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+
+    .dice {
+      width: 80px;
+      height: 80px;
+      background: white;
+      border: 4px solid #333;
+      border-radius: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      padding: 8px;
+      gap: 4px;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .dice.rolling {
+      animation: roll 0.5s infinite;
+    }
+
+    @keyframes roll {
+      0% { transform: rotate(0deg) scale(1); }
+      25% { transform: rotate(90deg) scale(1.1); }
+      50% { transform: rotate(180deg) scale(1); }
+      75% { transform: rotate(270deg) scale(1.1); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    .dot {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #333;
+    }
+
+    /* 액션 버튼 */
+    .action-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 18px 60px;
+      font-size: 22px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .action-btn:hover {
+      background: #5568d3;
+      transform: scale(1.05);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+
+    .action-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* 결과 메시지 */
+    .result-message {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      background: #667eea;
+      margin: 20px auto;
+      padding: 15px 25px;
+      border-radius: 12px;
+      min-height: 30px;
+      line-height: 1.6;
+      max-width: 500px;
+      box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+    }
+
+    /* 주사위 개수 표시 */
+    .dice-count-display {
+      text-align: center;
+      margin: 30px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 15px;
+    }
+
+    .dice-count-display h4 {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #3498db;
+    }
+
+    .mini-dice-container {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .mini-dice {
+      width: 40px;
+      height: 40px;
+      background: white;
+      border: 3px solid #3498db;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 승리 메시지 */
+    .winner-announcement {
+      text-align: center;
+      font-size: 32px;
+      font-weight: bold;
+      margin: 30px 0;
+      padding: 20px;
+      border-radius: 15px;
+      animation: bounce 1s infinite;
+    }
+
+    .winner-announcement.win {
+      background: #d4edda;
+      color: #155724;
+      border: 3px solid #28a745;
+    }
+
+    .winner-announcement.lose {
+      background: #f8d7da;
+      color: #721c24;
+      border: 3px solid #dc3545;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .restart-btn {
+      background: #28a745;
+      margin-top: 20px;
+    }
+
+    .restart-btn:hover {
+      background: #218838;
+    }
+
+    /* 전적 표시 */
+    .stats-display {
+      text-align: center;
+      margin: 20px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    /* 가위바위보 선택 버튼들 */
+    .stats-display {
+      text-align: center;
+      margin: 20px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    /* 가위바위보 선택 버튼들 */
+    .rps-choices {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .rps-choice-btn {
+      padding: 20px 30px;
+      font-size: 50px;
+      background: white;
+      border: 4px solid #667eea;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .rps-choice-btn:hover {
+      transform: scale(1.1);
+      background: #667eea;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <!-- 게임 설명 모달 -->
+  <div id="ruleModal" class="modal">
+    <div class="modal-content">
+      <h2>🎲 주사위 홀짝 게임</h2>
+      <p><strong>게임 규칙:</strong></p>
+      <p>1. 홀수 또는 짝수를 선택하세요</p>
+      <p>2. 게임 시작 시 주사위 6개가 자동으로 굴러갑니다</p>
+      <p>3. 가위바위보에서 진 사람이 <strong>자기가 가진 주사위만</strong> 굴립니다</p>
+      <p>4. 선택한 홀/짝에 맞는 주사위를 가져갑니다</p>
+      <p>5. <strong>상대방의 주사위를 모두 가져오면 승리!</strong></p>
+      <button class="confirm-btn" onclick="startGame()">게임 시작하기</button>
+    </div>
+  </div>
+
+  <!-- 게임 컨테이너 -->
+  <div id="gameContainer" class="game-container hidden">
+    <h1>🎲 주사위 홀짝 게임</h1>
+
+    <!-- 홀짝 선택 -->
+    <div id="paritySelection" class="parity-selection">
+      <h3>홀수와 짝수 중 하나를 선택하세요</h3>
+      <div class="parity-buttons">
+        <button class="parity-btn" onclick="selectParity(&#39;odd&#39;)">홀수 🔵</button>
+        <button class="parity-btn" onclick="selectParity(&#39;even&#39;)">짝수 🔴</button>
+      </div>
+    </div>
+
+    <!-- 게임 보드 -->
+    <div id="gameBoard" class="game-board hidden">
+      <!-- 컴퓨터 영역 -->
+      <div class="player-section computer-section" id="computerSection">
+        <div class="section-title">💻 컴퓨터 (<span id="computerDiceCount">0</span>개)</div>
+        <div class="hand-display" id="computerHandDisplay"></div>
+      </div>
+
+      <!-- 주사위 굴리기 영역 -->
+      <div class="dice-area">
+        <div id="diceContainer" class="dice-container"></div>
+      </div>
+
+      <!-- 결과 메시지 -->
+      <div id="resultMessage" class="result-message"></div>
+
+      <!-- 유저 영역 -->
+      <div class="player-section user-section" id="userSection">
+        <span class="parity-badge" id="userParityBadge"></span>
+        <div class="section-title">👤 나 (<span id="userDiceCount">0</span>개)</div>
+        
+        <!-- 가위바위보 선택 버튼들 (유저 박스 안에) -->
+        <div id="rpsChoices" class="rps-choices hidden">
+          <button class="rps-choice-btn" onclick="makeRPSChoice(0)">✌</button>
+          <button class="rps-choice-btn" onclick="makeRPSChoice(1)">✊</button>
+          <button class="rps-choice-btn" onclick="makeRPSChoice(2)">🖐</button>
+        </div>
+        
+        <div class="hand-display" id="userHandDisplay"></div>
+      </div>
+
+      <!-- 승리/패배 메시지 -->
+      <div id="winnerAnnouncement"></div>
+
+      <!-- 전적 표시 -->
+      <div id="statsDisplay" class="stats-display hidden">
+        총 전적: <span id="winCount">0</span>승 <span id="loseCount">0</span>패
+      </div>
+
+      <!-- 내 주사위 표시 -->
+      <div class="dice-count-display">
+        <h4>내가 가진 주사위</h4>
+        <div id="userInventory" class="mini-dice-container"></div>
+      </div>
+
+      <!-- 다시하기 버튼 -->
+      <button id="restartButton" class="action-btn restart-btn hidden" onclick="restartGame()">🔄 다시 하기</button>
+    </div>
+  </div>
+
+  <script>
+    // ============ 게임 상태 변수 ============
+    let userParity = null;
+    let computerParity = null;
+    let userDiceTotal = 0;
+    let computerDiceTotal = 0;
+    let gameStarted = false;
+    let isRolling = false;
+    let gameOver = false;
+    let winCount = 0;
+    let loseCount = 0;
+
+    // ============ 사운드 효과 ============
+    function playClickSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 1000;
+      oscillator.type = 'square';
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.05);
+    }
+
+    function playDiceRollSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = 150 + Math.random() * 100;
+          oscillator.type = 'square';
+          gainNode.gain.value = 0.05;
+          
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.1);
+        }, i * 150);
+      }
+    }
+
+    function playWinSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const notes = [523, 659, 784, 1047]; // C-E-G-C
+      
+      notes.forEach((freq, i) => {
+        setTimeout(() => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = freq;
+          oscillator.type = 'sine';
+          gainNode.gain.value = 0.2;
+          
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.3);
+        }, i * 150);
+      });
+    }
+
+    function playLoseSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const notes = [392, 349, 294, 262]; // G-F-D-C (내림)
+      
+      notes.forEach((freq, i) => {
+        setTimeout(() => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = freq;
+          oscillator.type = 'sine';
+          gainNode.gain.value = 0.2;
+          
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.3);
+        }, i * 150);
+      });
+    }
+
+    // ============ 주사위 점 그리기 ============
+    function createDiceFace(value) {
+      const dice = document.createElement('div');
+      dice.className = 'dice';
+      
+      const positions = {
+        1: [[1, 1]],
+        2: [[0, 0], [2, 2]],
+        3: [[0, 0], [1, 1], [2, 2]],
+        4: [[0, 0], [0, 2], [2, 0], [2, 2]],
+        5: [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]],
+        6: [[0, 0], [0, 2], [1, 0], [1, 2], [2, 0], [2, 2]]
+      };
+      
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        const row = Math.floor(i / 3);
+        const col = i % 3;
+        
+        if (positions[value].some(pos => pos[0] === row && pos[1] === col)) {
+          const dot = document.createElement('div');
+          dot.className = 'dot';
+          cell.appendChild(dot);
+        }
+        
+        dice.appendChild(cell);
+      }
+      
+      return dice;
+    }
+
+    // ============ 게임 시작 ============
+    function startGame() {
+      playClickSound();
+      document.getElementById('ruleModal').classList.add('hidden');
+      document.getElementById('gameContainer').classList.remove('hidden');
+    }
+
+    // ============ 홀짝 선택 ============
+    function selectParity(parity) {
+      playClickSound();
+      userParity = parity;
+      computerParity = parity === 'odd' ? 'even' : 'odd';
+      
+      const buttons = document.querySelectorAll('.parity-btn');
+      buttons.forEach(btn => btn.classList.remove('selected'));
+      event.target.classList.add('selected');
+      
+      // 유저와 컴퓨터 박스 색상 변경
+      const userSection = document.getElementById('userSection');
+      const computerSection = document.getElementById('computerSection');
+      const parityBadge = document.getElementById('userParityBadge');
+      
+      if (parity === 'odd') {
+        // 유저가 홀수 선택 → 유저는 파란색, 컴퓨터는 빨간색
+        userSection.classList.remove('even');
+        userSection.classList.add('odd');
+        computerSection.classList.remove('odd');
+        computerSection.classList.add('even');
+        parityBadge.textContent = '홀수';
+        parityBadge.className = 'parity-badge odd';
+      } else {
+        // 유저가 짝수 선택 → 유저는 빨간색, 컴퓨터는 파란색
+        userSection.classList.remove('odd');
+        userSection.classList.add('even');
+        computerSection.classList.remove('even');
+        computerSection.classList.add('odd');
+        parityBadge.textContent = '짝수';
+        parityBadge.className = 'parity-badge even';
+      }
+      
+      if (!gameStarted) {
+        gameStarted = true;
+        setTimeout(() => {
+          rollInitialDice();
+        }, 500);
+      }
+    }
+
+    // ============ 초기 주사위 굴리기 ============
+    function rollInitialDice() {
+      document.getElementById('paritySelection').classList.add('hidden');
+      document.getElementById('gameBoard').classList.remove('hidden');
+      document.getElementById('resultMessage').textContent = '게임 시작! 주사위 6개를 굴립니다...';
+      document.getElementById('rpsChoices').classList.add('hidden');
+      
+      rollDice(6, null, 'initial');
+    }
+
+    // ============ 주사위 굴리기 ============
+    function rollDice(count, loser, type) {
+      if (isRolling) return;
+      isRolling = true;
+      
+      playDiceRollSound();
+      
+      const container = document.getElementById('diceContainer');
+      container.innerHTML = '';
+      
+      const diceElements = [];
+      for (let i = 0; i < count; i++) {
+        const dice = document.createElement('div');
+        dice.className = 'dice rolling';
+        container.appendChild(dice);
+        diceElements.push(dice);
+      }
+      
+      // 1.2초 후 결과 표시 (속도 개선)
+      setTimeout(() => {
+        const results = [];
+        container.innerHTML = '';
+        
+        for (let i = 0; i < count; i++) {
+          const value = Math.floor(Math.random() * 6) + 1;
+          results.push(value);
+          const diceFace = createDiceFace(value);
+          container.appendChild(diceFace);
+        }
+        
+        setTimeout(() => {
+          distributeDice(results, loser, type);
+          isRolling = false;
+        }, 1000);
+      }, 1200);
+    }
+
+    // ============ 주사위 배분 ============
+    function distributeDice(results, loser, type) {
+      let oddCount = 0;
+      let evenCount = 0;
+      
+      results.forEach(value => {
+        if (value % 2 === 0) evenCount++;
+        else oddCount++;
+      });
+      
+      if (type === 'initial') {
+        if (userParity === 'odd') {
+          userDiceTotal = oddCount;
+          computerDiceTotal = evenCount;
+        } else {
+          userDiceTotal = evenCount;
+          computerDiceTotal = oddCount;
+        }
+        
+        document.getElementById('resultMessage').textContent = 
+          `게임 시작! 가위, 바위, 보 중 하나를 선택하세요!`;
+      } else {
+        // 가위바위보 후 배분 - 메시지 간소화
+        if (loser === 'user') {
+          let userKeep = userParity === 'odd' ? oddCount : evenCount;
+          let lost = userDiceTotal - userKeep;
+          
+          userDiceTotal = userKeep;
+          computerDiceTotal += (userParity === 'odd' ? evenCount : oddCount);
+          
+          document.getElementById('resultMessage').textContent = 
+            `내가 가위바위보에서 졌다. 주사위 ${lost}개를 잃었다.`;
+        } else {
+          let computerKeep = computerParity === 'odd' ? oddCount : evenCount;
+          let gained = computerParity === 'odd' ? evenCount : oddCount;
+          
+          computerDiceTotal = computerKeep;
+          userDiceTotal += gained;
+          
+          document.getElementById('resultMessage').textContent = 
+            `내가 가위바위보에서 이겼다! 주사위 ${gained}개를 얻었다!`;
+        }
+      }
+      
+      updateInventory();
+      checkWinner();
+      
+      if (!gameOver) {
+        document.getElementById('rpsChoices').classList.remove('hidden');
+        // 주사위 이미지를 유지 (가위바위보 선택할 때까지)
+      }
+    }
+
+    // ============ 가위바위보 선택 ============
+    function makeRPSChoice(userHandIndex) {
+      if (isRolling || gameOver) return;
+      
+      playClickSound();
+      document.getElementById('rpsChoices').classList.add('hidden');
+      document.getElementById('resultMessage').textContent = '';
+      document.getElementById('userHandDisplay').innerHTML = '';
+      document.getElementById('computerHandDisplay').innerHTML = '';
+      document.getElementById('diceContainer').innerHTML = '';
+      
+      const hands = ['✌', '✊', '🖐']; // 가위, 바위, 보
+      const handNames = ['가위', '바위', '보'];
+      
+      const computerHandIndex = Math.floor(Math.random() * 3);
+      
+      setTimeout(() => {
+        const userHandIcon = document.createElement('div');
+        userHandIcon.className = 'hand-icon';
+        userHandIcon.textContent = hands[userHandIndex];
+        document.getElementById('userHandDisplay').appendChild(userHandIcon);
+        
+        const computerHandIcon = document.createElement('div');
+        computerHandIcon.className = 'hand-icon';
+        computerHandIcon.textContent = hands[computerHandIndex];
+        document.getElementById('computerHandDisplay').appendChild(computerHandIcon);
+        
+        setTimeout(() => {
+          if (userHandIndex === computerHandIndex) {
+            document.getElementById('resultMessage').textContent = '무승부! 다시 선택하세요!';
+            document.getElementById('rpsChoices').classList.remove('hidden');
+            return;
+          }
+          
+          // 가위(0)는 보(2)를 이김, 바위(1)는 가위(0)를 이김, 보(2)는 바위(1)를 이김
+          const userWins = 
+            (userHandIndex === 0 && computerHandIndex === 2) ||
+            (userHandIndex === 1 && computerHandIndex === 0) ||
+            (userHandIndex === 2 && computerHandIndex === 1);
+          
+          let loser;
+          if (userWins) {
+            loser = 'computer';
+            setTimeout(() => {
+              rollDice(computerDiceTotal, loser, 'round');
+            }, 1000);
+          } else {
+            loser = 'user';
+            setTimeout(() => {
+              rollDice(userDiceTotal, loser, 'round');
+            }, 1000);
+          }
+        }, 1000);
+      }, 500);
+    }
+
+    // ============ 인벤토리 업데이트 ============
+    function updateInventory() {
+      document.getElementById('userDiceCount').textContent = userDiceTotal;
+      document.getElementById('computerDiceCount').textContent = computerDiceTotal;
+      
+      const userInventory = document.getElementById('userInventory');
+      userInventory.innerHTML = '';
+      
+      for (let i = 0; i < userDiceTotal; i++) {
+        const dice = document.createElement('div');
+        dice.className = 'mini-dice';
+        dice.textContent = '🎲';
+        userInventory.appendChild(dice);
+      }
+    }
+
+    // ============ 승리 체크 ============
+    function checkWinner() {
+      if (userDiceTotal === 0) {
+        gameOver = true;
+        loseCount++;
+        playLoseSound();
+        
+        const announcement = document.getElementById('winnerAnnouncement');
+        announcement.className = 'winner-announcement lose';
+        announcement.textContent = '😢 패배! 컴퓨터가 모든 주사위를 가져갔습니다!';
+        document.getElementById('rpsChoices').classList.add('hidden');
+        document.getElementById('restartButton').classList.remove('hidden');
+        document.getElementById('statsDisplay').classList.remove('hidden');
+        updateStats();
+      } else if (computerDiceTotal === 0) {
+        gameOver = true;
+        winCount++;
+        playWinSound();
+        
+        const announcement = document.getElementById('winnerAnnouncement');
+        announcement.className = 'winner-announcement win';
+        announcement.textContent = '🎉 승리! 모든 주사위를 가져왔습니다!';
+        document.getElementById('rpsChoices').classList.add('hidden');
+        document.getElementById('restartButton').classList.remove('hidden');
+        document.getElementById('statsDisplay').classList.remove('hidden');
+        updateStats();
+      }
+    }
+
+    // ============ 전적 업데이트 ============
+    function updateStats() {
+      document.getElementById('winCount').textContent = winCount;
+      document.getElementById('loseCount').textContent = loseCount;
+    }
+
+    // ============ 게임 재시작 ============
+    function restartGame() {
+      playClickSound();
+      
+      userParity = null;
+      computerParity = null;
+      userDiceTotal = 0;
+      computerDiceTotal = 0;
+      gameStarted = false;
+      isRolling = false;
+      gameOver = false;
+      // winCount, loseCount는 유지
+      
+      document.getElementById('gameBoard').classList.add('hidden');
+      document.getElementById('paritySelection').classList.remove('hidden');
+      document.getElementById('restartButton').classList.add('hidden');
+      document.getElementById('rpsChoices').classList.add('hidden');
+      document.getElementById('winnerAnnouncement').innerHTML = '';
+      document.getElementById('resultMessage').textContent = '';
+      document.getElementById('diceContainer').innerHTML = '';
+      document.getElementById('userHandDisplay').innerHTML = '';
+      document.getElementById('computerHandDisplay').innerHTML = '';
+      
+      const buttons = document.querySelectorAll('.parity-btn');
+      buttons.forEach(btn => btn.classList.remove('selected'));
+    }
+  </script>
+
+
+</body></html>
